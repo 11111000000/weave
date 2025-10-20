@@ -1,0 +1,55 @@
+* Weave Mode (early foundation)
+- Org-first workflow to ask questions and apply LLM-generated project edits.
+- Core logic is pure and testable. Effects live at the edges.
+
+Quick start:
+1. Add to load-path and require:
+   (add-to-list 'load-path "/home/az/Code/weave/lisp")
+   (require 'weave)
+2. In an Org buffer: M-x weave-mode
+3. Use C-c w to open the menu. Generate a patch, dry-run, then apply.
+4. On a patch block, C-c C-c applies it.
+
+Patch format: PATCH SIMPLE v1 inside
+#+begin_llm_patch ... #+end_llm_patch.
+
+Layout:
+- lisp/weave.el                  : Umbrella loader and version
+- lisp/weave-mode.el             : Minor mode and high-level commands
+- lisp/weave-org.el              : Org helpers (bounds, overlays, annotations)
+- lisp/weave-core.el             : Schemas, error codes, change classification
+- lisp/weave-registry.el         : Registries (parsers, engines)
+- lisp/weave-parse.el            : High-level parse over Org and dispatcher
+- lisp/blocks/weave-block-patch-simple.el : Parser for PATCH SIMPLE v1
+- lisp/weave-plan.el             : Dry-run planning (idempotency, preview data)
+- lisp/weave-apply.el            : Transactional application (effects)
+- lisp/weave-path.el             : Project root, path normalization and safety
+- lisp/weave-fs.el               : File I/O helpers, atomic writes, backups
+- lisp/weave-log.el              : Logging, preview, confirmation
+- lisp/weave-transient.el        : Transient UI (C-c w)
+- lisp/weave-session.el          : Last generated group tracking
+- lisp/weave-llm.el              : Thin LLM adapter using gptel
+- lisp/engines/weave-engine-api.el     : Engine protocol
+- lisp/engines/weave-engine-gptel.el   : GPTel engine adapter
+
+Harmony: Clean core + thin ports, small functions, data-first APIs.
+
+** Installation (use-package)
+Local checkout example:
+
+#+begin_src elisp
+;; Make the Weave sources available
+(add-to-list 'load-path "/home/az/Code/weave/lisp")
+(add-to-list 'load-path "/home/az/Code/weave/lisp/blocks")
+(add-to-list 'load-path "/home/az/Code/weave/lisp/engines")
+
+;; Load Weave via use-package
+(use-package weave
+  :commands (weave-mode weave-version weave-transient-menu)
+  :hook (org-mode . weave-mode)   ;; auto-enable in Org buffers; remove if you prefer manual M-x weave-mode
+  :init
+  ;; Optional defaults
+  (setq weave-confirm-apply t
+        weave-annotate-applied t))
+#+end_src
+
