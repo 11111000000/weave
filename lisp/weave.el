@@ -27,8 +27,10 @@
 (require 'weave-apply)
 
 ;; UI and integrations
+(require 'weave-prompts)
 (require 'weave-log)
 (require 'weave-org)
+(require 'weave-session)
 (require 'weave-mode)
 (require 'weave-transient)
 

@@ -18,6 +18,7 @@
 (require 'weave-plan)
 (require 'weave-apply)
 (require 'weave-log)
+(require 'weave-path)
 
 ;;; Autoload to avoid circular require with weave-transient
 (autoload 'weave-transient-menu "weave-transient" nil t)

@@ -58,10 +58,15 @@
           (let* ((abs (expand-file-name safe root)))
             (pcase (alist-get :type op)
               ('write
-               (let* ((exists (file-exists-p abs))
-                      (size (string-bytes (or (alist-get :content op) ""))))
-                 (push `(:file ,safe :ops ((:op write :will-create ,(not exists)
-                                                :will-overwrite ,exists :size-new ,size)))
+               (let* ((content (or (alist-get :content op) ""))
+                      (exists (file-exists-p abs))
+                      (size (string-bytes content)))
+                 (push `(:file ,safe
+                               :ops ((:op write
+                                          :will-create ,(not exists)
+                                          :will-overwrite ,exists
+                                          :size-new ,size))
+                               :_write-content ,content)
                        files)))
               ('delete
                (push `(:file ,safe :ops ((:op delete :will-delete ,(file-exists-p abs))))
@@ -73,7 +78,8 @@
                           :severity 'error :code :not-found
                           :message (format "Anchor not found in %s" safe))
                          errors))
-                 (push `(:file ,safe :ops ,(alist-get :ops res)
+                 (push `(:file ,safe
+                               :ops ,(alist-get :ops res)
                                :_new-text ,(alist-get :new-text res)
                                :_mtime ,(alist-get :mtime res)
                                :_size ,(alist-get :size res))

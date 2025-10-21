@@ -22,6 +22,23 @@
          commit-ok)
     (unwind-protect
         (progn
+          ;; Re-validate drift for edit operations (mtime/size) before staging
+          (let (drift)
+            (dolist (fp (alist-get :files plan))
+              (let ((mtime (alist-get :_mtime fp))
+                    (size  (alist-get :_size fp)))
+                (when (and mtime size)
+                  (let* ((abs (expand-file-name (alist-get :file fp) root))
+                         (attrs (and (file-exists-p abs) (file-attributes abs)))
+                         (cur-mtime (and attrs (file-attribute-modification-time attrs)))
+                         (cur-size  (and attrs (file-attribute-size attrs))))
+                    (unless (and cur-mtime cur-size
+                                 (equal cur-mtime mtime)
+                                 (= (or cur-size 0) size))
+                      (push (alist-get :file fp) drift))))))
+            (when drift
+              (cl-return-from weave-apply
+                (cons nil `(:error :apply-drift :files ,(nreverse drift))))))
           ;; Stage new file contents for write/edit
           (dolist (fp (alist-get :files plan))
             (let* ((rel (alist-get :file fp))
@@ -29,9 +46,9 @@
                    (ops (alist-get :ops fp)))
               (pcase (and ops (alist-get :op (car ops)))
                 ('write
-                 (let ((content (alist-get :content (car (last ops)))))
-                   ;; no content in plan, this comes from patch; skip here
-                   (puthash rel (cons :write content) staged)))
+                 (let ((content (alist-get :_write-content fp)))
+                   (when content
+                     (puthash rel (cons :write content) staged))))
                 (_
                  ;; edit: use computed new text from plan
                  (let ((new (alist-get :_new-text fp)))
@@ -40,7 +57,7 @@
           (maphash
            (lambda (rel pair)
              (let* ((abs (expand-file-name rel root))
-                    (kind (car pair)) (content (cdr pair))
+                    (content (cdr pair))
                     (bak (and (file-exists-p abs) (weave-fs-backup-path root rel))))
                (when bak
                  (copy-file abs bak t)

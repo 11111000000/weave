@@ -90,9 +90,9 @@ Return (values patch diagnostics)."
     ;; Meta lines until first "file:" or EOF
     (cl-loop while (< idx (length lines)) do
              (pcase-let ((`(_ _ ,txt) (nth idx lines)))
-               (let ((t (weave--ps--meta-line-p (string-trim-right txt))))
-                 (if (and t (not (string-prefix-p "file:" (downcase txt))))
-                     (puthash (car t) (cdr t) meta)
+               (let ((pair (weave--ps--meta-line-p (string-trim-right txt))))
+                 (if (and pair (not (string-prefix-p "file:" (downcase txt))))
+                     (puthash (car pair) (cdr pair) meta)
                    (cl-return))))
              (setq idx (1+ idx)))
     (let* ((id (gethash "id" meta)))
