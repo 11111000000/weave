@@ -25,6 +25,7 @@
     (set-marker (cdr weave--last-group) (point))
     weave--last-group))
 
+;;;###autoload
 (defun weave-apply-last-generated ()
   "Apply all llm_patch blocks in the last generated group."
   (interactive)

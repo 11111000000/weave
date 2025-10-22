@@ -21,7 +21,8 @@
    ["Log"
     ("v" "Preview plan" weave-dry-run-at-point)
     ("l" "Show log" (lambda () (interactive) (display-buffer "*weave-log*")))]
-   ])
+   ["Help"
+    ("?" "Patch format help (C-c w ?)" weave-help-format)]])
 
 (provide 'weave-transient)
 ;;; weave-transient.el ends here

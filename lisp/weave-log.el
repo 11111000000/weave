@@ -33,25 +33,50 @@
       (insert (apply #'format (concat (format-time-string "[%F %T] ") fmt) args) "\n"))))
 
 (defun weave-log-preview (plan)
-  "Show a simple preview buffer for PLAN."
+  "Show an informative preview buffer for PLAN: files, operations and diff/fragment."
   (let ((buf (get-buffer-create "*weave-preview*")))
     (with-current-buffer buf
       (let ((inhibit-read-only t))
         (erase-buffer)
         (insert (format "Patch: %s\n\n" (alist-get :patch-id plan)))
         (dolist (fp (alist-get :files plan))
-          (insert (format "- %s\n" (alist-get :file fp)))
+          (insert (format "--- %s ---\n" (alist-get :file fp)))
           (dolist (o (alist-get :ops fp))
-            (insert (format "  * %s %s\n"
-                            (alist-get :op o)
-                            (or (alist-get :kind o) ""))))))
-      (view-mode 1))
-    (display-buffer buf)))
+            (let ((op (alist-get :op o)))
+              (pcase op
+                ('write
+                 (insert "[write] file will be overwritten/created.\n")
+                 (let ((content (alist-get :_write-content fp)))
+                   (when content
+                     (insert "New content (start):\n"
+                             (string-join
+                              (seq-take (split-string content "\n") 10) "\n")
+                             (if (> (length (split-string content "\n")) 10)
+                                 "\n...\n[end] ...\n" "\n")))))
+                ('delete
+                 (insert "[delete] file will be removed.\n"))
+                ('edit
+                 (insert "[edit] file will be patched.\n")
+                 (let ((old (and (alist-get :_mtime fp)
+                                 (car (weave-fs-read-file
+                                       (expand-file-name (alist-get :file fp)
+                                                         (weave-path-project-root))))))
+                       (new (alist-get :_new-text fp)))
+                   (when (and old new)
+                     (insert "Before:\n"
+                             (string-join (seq-take (split-string old "\n") 10) "\n")
+                             (if (> (length (split-string old "\n")) 10) "\n...\n" "\n"))
+                     (insert "After :\n"
+                             (string-join (seq-take (split-string new "\n") 10) "\n")
+                             (if (> (length (split-string new "\n")) 10) "\n...\n" "\n")))))))
+            (insert "\n")))
+        (view-mode 1))
+      (display-buffer buf)))
 
-(defun weave-log-confirm-apply (plan)
-  "Ask user confirmation to apply PLAN, showing a short summary."
-  (weave-log-preview plan)
-  (y-or-n-p (format "Apply patch %s? " (alist-get :patch-id plan))))
+  (defun weave-log-confirm-apply (plan)
+    "Ask user confirmation to apply PLAN, showing a short summary."
+    (weave-log-preview plan)
+    (y-or-n-p (format "Apply patch %s? " (alist-get :patch-id plan))))
 
-(provide 'weave-log)
+  (provide 'weave-log)
 ;;; weave-log.el ends here

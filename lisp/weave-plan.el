@@ -60,14 +60,20 @@
               ('write
                (let* ((content (or (alist-get :content op) ""))
                       (exists (file-exists-p abs))
-                      (size (string-bytes content)))
-                 (push `(:file ,safe
-                               :ops ((:op write
-                                          :will-create ,(not exists)
-                                          :will-overwrite ,exists
-                                          :size-new ,size))
-                               :_write-content ,content)
-                       files)))
+                      (attrs (and exists (file-attributes abs)))
+                      (mtime (and attrs (file-attribute-modification-time attrs)))
+                      (osize (and attrs (file-attribute-size attrs)))
+                      (size (string-bytes content))
+                      (entry =(:file ,safe
+                                     :ops ((:op write
+                                                :will-create ,(not exists)
+                                                :will-overwrite ,exists
+                                                :size-new ,size))
+                                     :_write-content ,content)))
+                 (when exists
+                   (setq entry (append entry (list :_mtime mtime :_size osize))))
+                 (push entry files)))
+
               ('delete
                (push `(:file ,safe :ops ((:op delete :will-delete ,(file-exists-p abs))))
                      files))

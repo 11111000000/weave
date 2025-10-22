@@ -40,16 +40,16 @@ Return (values REL-NORM diagnostics) where REL-NORM is normalized relative path.
            ;; For v1 forbid parent dir components; allow "." implicitly by normalization
            (has-parent (cl-some (lambda (seg) (string= seg "..")) components)))
       (if has-parent
-          (list nil (list (list :severity 'error :code :parent-dir :message "Parent dir '..' not allowed"))))
-      (let* ((root-true (file-name-as-directory (file-truename (expand-file-name root))))
-             ;; Expand against root, then resolve symlinks via truename
-             (abs (expand-file-name rel root))
-             (abs-true (file-truename abs)))
-        ;; Ensure resolved path stays under resolved root (blocks symlink escape)
-        (if (not (string-prefix-p root-true (file-name-as-directory abs-true)))
-            (list nil (list (list :severity 'error :code :symlink :message "Resolved path escapes project root (symlink)")))
-          ;; Return normalized relative path against resolved root
-          (list (file-relative-name abs-true root-true) nil)))))))
+          (list nil (list (list :severity 'error :code :parent-dir :message "Parent dir '..' not allowed")))
+        (let* ((root-true (file-name-as-directory (file-truename (expand-file-name root))))
+               ;; Expand against root, then resolve symlinks via truename
+               (abs (expand-file-name rel root))
+               (abs-true (file-truename abs)))
+          ;; Ensure resolved path stays under resolved root (blocks symlink escape)
+          (if (not (string-prefix-p root-true (file-name-as-directory abs-true)))
+              (list nil (list (list :severity 'error :code :symlink :message "Resolved path escapes project root (symlink)")))
+            ;; Return normalized relative path against resolved root
+            (list (file-relative-name abs-true root-true) nil))))))))
 
 
 (provide 'weave-path)

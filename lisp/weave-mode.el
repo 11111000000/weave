@@ -46,6 +46,8 @@ Adds Org helpers and Weave commands in Org buffers."
   :keymap (let ((map (make-sparse-keymap)))
             ;; Main menu
             (define-key map (kbd "C-c w") #'weave-transient-menu)
+            ;; Show PATCH SIMPLE v1 help
+            (define-key map (kbd "C-c w ?") #'weave-help-format)
             ;; Context apply
             (define-key map (kbd "C-c C-c") #'weave-ctrl-c-ctrl-c)
             map)
@@ -55,6 +57,19 @@ Adds Org helpers and Weave commands in Org buffers."
         (user-error "Weave requires org-mode"))
     (when (derived-mode-p 'org-mode)
       (weave-org-clear-overlays))))
+
+;;;###autoload
+(defun weave-help-format ()
+  "Display a concise help buffer with PATCH SIMPLE v1 format and documentation link."
+  (interactive)
+  (let ((buf (get-buffer-create "*Weave Format Help*")))
+    (with-current-buffer buf
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert (weave-prompts-explain-format)
+                "\nSee also: https://github.com/…/weave-mode#patch-simple-v1\n"))
+      (view-mode 1))
+    (display-buffer buf)))
 
 (defun weave-ctrl-c-ctrl-c ()
   "Contextual C-c C-c for Weave.
@@ -81,7 +96,9 @@ If on a llm_patch block, dry-run then apply. Otherwise, delegate to Org."
        (weave-org-display-diagnostics beg end diags)
        (if patch
            (weave-log-preview plan)
-         (user-error "No patch parsed at point"))))
+         (let ((msg (or (car (seq-map (lambda (d) (alist-get :message d)) diags))
+                        "No patch parsed at point")))
+           (user-error "%s  Для формата патча: C-c w ?" msg)))))
     (_ (user-error "Place point inside a #+begin_llm_patch block"))))
 
 ;;;###autoload
